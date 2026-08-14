@@ -440,7 +440,7 @@ export function App() {
             }}
           />
         ) : (
-          <div className="graph-pane panel-body muted">打开一个 Git 仓库以查看提交图</div>
+          <div className="graph-pane panel-body muted">打开仓库后，提交说明会以字符串节点显示，并用连线接在一起</div>
         )}
 
         <section className="detail">

@@ -1,4 +1,5 @@
 import type { GraphCommit } from "../../shared/types";
+import { edgePath, layoutStringGraph } from "../stringGraph";
 
 const LANE_COLORS = [
   "#58a6ff",
@@ -10,10 +11,6 @@ const LANE_COLORS = [
   "#ffa657",
   "#ff7b72",
 ];
-
-export const ROW_H = 34;
-export const LANE_W = 16;
-export const PAD = 14;
 
 export function laneColor(lane: number): string {
   const color = LANE_COLORS[lane % LANE_COLORS.length];
@@ -28,90 +25,92 @@ interface GraphViewProps {
   onSelect: (hash: string) => void;
 }
 
-export function GraphView({ commits, laneCount, head, selected, onSelect }: GraphViewProps) {
-  const graphWidth = PAD * 2 + Math.max(laneCount, 1) * LANE_W;
-  const height = Math.max(commits.length * ROW_H, ROW_H);
+function formatTime(timestamp: number): string {
+  if (!timestamp) {
+    return "";
+  }
+  const date = new Date(timestamp * 1000);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleString();
+}
+
+export function GraphView({ commits, head, selected, onSelect }: GraphViewProps) {
+  const layout = layoutStringGraph(commits);
+  const nodeByHash = new Map(layout.nodes.map((node) => [node.hash, node]));
 
   return (
     <div className="graph-pane">
-      <div style={{ ["--graph-width" as string]: `${graphWidth}px` }}>
-        <div style={{ position: "relative" }}>
+      <div className="string-graph-header">
+        <strong>提交说明</strong>
+        <span className="muted">每个卡片是一个字符串节点，连线把说明和说明接在一起</span>
+      </div>
+      {commits.length === 0 ? (
+        <div className="graph-empty muted">这个仓库还没有提交说明</div>
+      ) : (
+        <div className="string-graph" style={{ width: layout.width, height: layout.height }}>
           <svg
-            width={graphWidth}
-            height={height}
-            style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}
+            className="string-graph-edges"
+            width={layout.width}
+            height={layout.height}
+            aria-hidden="true"
           >
-            {commits.map((commit, index) => {
-              const x = PAD + commit.lane * LANE_W;
-              const y = ROW_H * index + ROW_H / 2;
-              const nextY = y + ROW_H;
+            {layout.edges.map((edge) => {
+              const from = nodeByHash.get(edge.fromHash);
               return (
-                <g key={commit.hash}>
-                  {commit.throughLanes.map((lane) => {
-                    const tx = PAD + lane * LANE_W;
-                    return (
-                      <line
-                        key={`${commit.hash}-t-${lane}`}
-                        x1={tx}
-                        y1={y - ROW_H / 2}
-                        x2={tx}
-                        y2={y + ROW_H / 2}
-                        stroke={laneColor(lane)}
-                        strokeWidth={2}
-                      />
-                    );
-                  })}
-                  {commit.edges.map((edge, edgeIndex) => {
-                    const x2 = PAD + edge.toLane * LANE_W;
-                    const isMerge = edge.kind === "merge";
-                    const c1y = y + 10;
-                    const c2y = nextY - 10;
-                    return (
-                      <path
-                        key={`${commit.hash}-e-${edgeIndex}`}
-                        d={`M ${x} ${y} C ${x} ${c1y}, ${x2} ${c2y}, ${x2} ${nextY}`}
-                        fill="none"
-                        stroke={laneColor(isMerge ? edge.toLane : commit.lane)}
-                        strokeWidth={2}
-                      />
-                    );
-                  })}
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={head === commit.hash ? 6 : 4.5}
-                    fill={laneColor(commit.lane)}
-                    stroke={head === commit.hash ? "#e6edf3" : "none"}
-                    strokeWidth={2}
-                  />
-                </g>
+                <path
+                  key={`${edge.fromHash}-${edge.toHash}-${edge.kind}`}
+                  d={edgePath(edge)}
+                  fill="none"
+                  stroke={laneColor(from?.lane ?? 0)}
+                  strokeWidth={edge.kind === "merge" ? 2.5 : 2}
+                  strokeDasharray={edge.kind === "merge" ? "6 4" : undefined}
+                />
               );
             })}
           </svg>
-          {commits.map((commit) => (
-            <div
-              key={commit.hash}
-              className={`commit-row${selected === commit.hash ? " selected" : ""}`}
-              onClick={() => onSelect(commit.hash)}
-            >
-              <div />
-              <div className="commit-meta">
-                <span className="hash">{commit.shortHash}</span>
-                {head === commit.hash ? <span className="badge head">HEAD</span> : null}
-                {commit.refs.map((ref) => (
-                  <span key={ref} className={`badge${ref.includes("tag") ? " tag" : ""}`}>
-                    {ref}
-                  </span>
-                ))}
-                <span className="subject" title={commit.subject}>
-                  {commit.subject}
+          {layout.nodes.map((node) => {
+            const isSelected = selected === node.hash;
+            const isHead = head === node.hash;
+            const color = laneColor(node.lane);
+            return (
+              <button
+                key={node.hash}
+                type="button"
+                className={`string-node${isSelected ? " selected" : ""}${isHead ? " is-head" : ""}`}
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.width,
+                  minHeight: node.height,
+                  height: node.height,
+                  borderColor: isSelected || isHead ? color : undefined,
+                }}
+                title={node.comment}
+                onClick={() => onSelect(node.hash)}
+              >
+                <span className="string-node-dot" style={{ background: color }} />
+                <span className="string-node-meta">
+                  <span className="hash">{node.shortHash}</span>
+                  {isHead ? <span className="badge head">HEAD</span> : null}
+                  {node.refs.map((ref) => (
+                    <span key={ref} className={`badge${/tag/i.test(ref) ? " tag" : ""}`}>
+                      {ref}
+                    </span>
+                  ))}
                 </span>
-                <span className="muted">{commit.author}</span>
-              </div>
-            </div>
-          ))}
+                <span className="string-node-subject">{node.subject || "(无说明)"}</span>
+                {node.body ? <span className="string-node-body">{node.body}</span> : null}
+                <span className="string-node-author muted">
+                  {node.author}
+                  {node.timestamp ? ` · ${formatTime(node.timestamp)}` : ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

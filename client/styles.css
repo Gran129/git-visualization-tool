@@ -93,7 +93,7 @@ button:disabled {
 
 .workspace {
   display: grid;
-  grid-template-columns: var(--sidebar) 1fr 420px;
+  grid-template-columns: 220px minmax(480px, 1.7fr) 360px;
   min-height: 0;
 }
 
@@ -159,6 +159,109 @@ button:disabled {
 
 .graph-pane {
   position: relative;
+  background:
+    radial-gradient(circle at 1px 1px, #21262d 1px, transparent 0) 0 0 / 18px 18px,
+    var(--bg);
+}
+
+.graph-empty {
+  padding: 32px 16px;
+}
+
+.string-graph-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+
+.string-graph {
+  position: relative;
+  min-width: 100%;
+}
+
+.string-graph-edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+.string-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  text-align: left;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px 10px 18px;
+  box-shadow: 0 8px 24px rgba(1, 4, 9, 0.35);
+  overflow: hidden;
+}
+
+.string-node:hover {
+  border-color: var(--accent);
+}
+
+.string-node.selected {
+  background: #1c2128;
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(1, 4, 9, 0.45);
+}
+
+.string-node.is-head {
+  border-width: 2px;
+}
+
+.string-node-dot {
+  position: absolute;
+  left: 7px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.string-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 18px;
+}
+
+.string-node-subject {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.string-node-body {
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.string-node-author {
+  font-size: 11px;
+  margin-top: auto;
 }
 
 .commit-row {
