@@ -173,11 +173,46 @@ button:disabled {
   top: 0;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 12px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elev);
+}
+
+.line-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.line-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.line-legend-item i {
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  border-top: 2.5px solid var(--accent);
+}
+
+.line-legend-item.constant i {
+  border-top: 2px solid #6e7681;
+}
+
+.subtraction-line.series {
+  stroke-width: 2.5;
+}
+
+.subtraction-line.constant {
+  stroke: #6e7681;
+  stroke-width: 1.5;
 }
 
 .string-graph {

@@ -1,5 +1,5 @@
 import type { GraphCommit } from "../../shared/types";
-import { edgePath, layoutStringGraph } from "../stringGraph";
+import { layoutStringGraph, seriesPath } from "../stringGraph";
 
 const LANE_COLORS = [
   "#58a6ff",
@@ -38,13 +38,21 @@ function formatTime(timestamp: number): string {
 
 export function GraphView({ commits, head, selected, onSelect }: GraphViewProps) {
   const layout = layoutStringGraph(commits);
-  const nodeByHash = new Map(layout.nodes.map((node) => [node.hash, node]));
 
   return (
     <div className="graph-pane">
       <div className="string-graph-header">
         <strong>提交说明</strong>
-        <span className="muted">每个卡片是一个字符串节点，连线把说明和说明接在一起</span>
+        <span className="line-legend">
+          <span className="line-legend-item series">
+            <i />
+            系列线：负向（子→父）与正向（父→子）同属一条系列
+          </span>
+          <span className="line-legend-item constant">
+            <i />
+            恒定线：贯穿泳道，横坐标不变
+          </span>
+        </span>
       </div>
       {commits.length === 0 ? (
         <div className="graph-empty muted">这个仓库还没有提交说明</div>
@@ -56,19 +64,25 @@ export function GraphView({ commits, head, selected, onSelect }: GraphViewProps)
             height={layout.height}
             aria-hidden="true"
           >
-            {layout.edges.map((edge) => {
-              const from = nodeByHash.get(edge.fromHash);
-              return (
-                <path
-                  key={`${edge.fromHash}-${edge.toHash}-${edge.kind}`}
-                  d={edgePath(edge)}
-                  fill="none"
-                  stroke={laneColor(from?.lane ?? 0)}
-                  strokeWidth={edge.kind === "merge" ? 2.5 : 2}
-                  strokeDasharray={edge.kind === "merge" ? "6 4" : undefined}
-                />
-              );
-            })}
+            {layout.constantLines.map((line) => (
+              <line
+                key={`constant-${line.lane}-${line.y1}-${line.y2}`}
+                className="subtraction-line constant"
+                x1={line.x}
+                y1={line.y1}
+                x2={line.x}
+                y2={line.y2}
+              />
+            ))}
+            {layout.seriesLines.map((line) => (
+              <path
+                key={`series-${line.fromHash}-${line.toHash}`}
+                className="subtraction-line series"
+                d={seriesPath(line)}
+                fill="none"
+                stroke={laneColor(line.lane)}
+              />
+            ))}
           </svg>
           {layout.nodes.map((node) => {
             const isSelected = selected === node.hash;
