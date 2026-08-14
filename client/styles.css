@@ -1,0 +1,347 @@
+:root {
+  --bg: #0d1117;
+  --bg-elev: #161b22;
+  --bg-hover: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --orange: #d29922;
+  --purple: #bc8cff;
+  --row: 34px;
+  --sidebar: 260px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 "IBM Plex Sans", "Noto Sans SC", "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button.primary {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+button.danger {
+  color: var(--red);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 48px 1fr 22px;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+
+.toolbar input.path {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar) 1fr 420px;
+  min-height: 0;
+}
+
+.sidebar,
+.graph-pane,
+.detail {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+}
+
+.detail {
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ref-item,
+.file-item,
+.stash-item,
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.ref-item:hover,
+.file-item:hover,
+.stash-item:hover,
+.commit-row:hover {
+  background: var(--bg-hover);
+}
+
+.ref-item.current {
+  color: var(--accent);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.hash {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--orange);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.graph-pane {
+  position: relative;
+}
+
+.commit-row {
+  display: grid;
+  grid-template-columns: var(--graph-width, 120px) 1fr;
+  height: var(--row);
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+
+.commit-row.selected {
+  background: #1c2128;
+}
+
+.commit-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  overflow: hidden;
+}
+
+.commit-meta .subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 11px;
+  background: #1f3a5f;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.badge.tag {
+  background: #3d2f00;
+  color: var(--orange);
+}
+
+.badge.head {
+  background: #1b4332;
+  color: var(--green);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.panel-body {
+  padding: 10px 12px;
+  overflow: auto;
+  flex: 1;
+}
+
+.diff {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.diff .add {
+  background: #12261e;
+  color: #7ee787;
+}
+
+.diff .del {
+  background: #2d1117;
+  color: #ffa198;
+}
+
+.diff .hunk {
+  color: var(--accent);
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 36px;
+  background: #3d1117;
+  border: 1px solid var(--red);
+  color: #ffa198;
+  padding: 10px 14px;
+  border-radius: 8px;
+  max-width: 420px;
+  z-index: 20;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.dialog {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  width: 420px;
+  display: grid;
+  gap: 10px;
+}
+
+.dialog input,
+.dialog textarea,
+.dialog select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.dialog textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.commit-box textarea {
+  width: 100%;
+  min-height: 72px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.tree-row {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.blame-line {
+  display: grid;
+  grid-template-columns: 70px 90px 1fr;
+  gap: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.search {
+  margin: 0 12px 8px;
+  width: calc(100% - 24px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
