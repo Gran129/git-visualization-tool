@@ -120,6 +120,11 @@ export function App() {
         showError(err);
       }
     })();
+    return api.onOpenPath((dir) => {
+      setPathDraft(dir);
+      setPath(dir);
+      void refresh(dir);
+    });
   }, [refresh]);
 
   useEffect(() => {
@@ -240,6 +245,20 @@ export function App() {
           }}
           placeholder="仓库绝对路径"
         />
+        <button
+          onClick={() => {
+            void api.selectDirectory().then((dir) => {
+              if (!dir) {
+                return;
+              }
+              setPathDraft(dir);
+              setPath(dir);
+              void refresh(dir);
+            });
+          }}
+        >
+          浏览
+        </button>
         <button className="primary" onClick={() => void openRepo()} disabled={busy}>
           打开
         </button>
