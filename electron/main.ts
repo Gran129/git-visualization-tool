@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { invoke } from "../server/dispatch";
+import { ensureUserGitOnPath } from "../server/gitInstall";
 
 const isDev = process.env.GIT_VIZ_DEV === "1";
 
@@ -87,6 +88,15 @@ app.whenReady().then(() => {
     }
     return invoke(method, payload ?? {});
   });
+
+  try {
+    const install = ensureUserGitOnPath();
+    if (install.action === "installed") {
+      console.log(install.message);
+    }
+  } catch (error) {
+    console.error("将 Git 安装到用户目录失败:", error);
+  }
 
   const win = createWindow();
   setupMenu(win);

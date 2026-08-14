@@ -8,6 +8,7 @@ import type {
   CommitDetail,
   CommitFile,
   GraphPayload,
+  GitRuntimeInfo,
   RefInfo,
   ReflogEntry,
   RepoSummary,
@@ -75,6 +76,7 @@ export function App() {
   const [dialogValue, setDialogValue] = useState("");
   const [dialogExtra, setDialogExtra] = useState("");
   const [recents, setRecents] = useState<string[]>(loadRecents());
+  const [gitRuntime, setGitRuntime] = useState<GitRuntimeInfo | null>(null);
 
   const showError = (err: unknown) => {
     setError(err instanceof Error ? err.message : String(err));
@@ -111,6 +113,12 @@ export function App() {
 
   useEffect(() => {
     void (async () => {
+      try {
+        const runtime = await api.gitRuntime();
+        setGitRuntime(runtime);
+      } catch {
+        // ignore — status bar will hide git info
+      }
       try {
         const defaults = await api.defaultPath();
         setPath(defaults.path);
@@ -734,7 +742,13 @@ export function App() {
             ? `${summary.detached ? "DETACHED" : summary.branch ?? "无分支"}  ${summary.head?.slice(0, 7) ?? ""}  ↑${summary.ahead} ↓${summary.behind}`
             : "未打开仓库"}
         </span>
-        <span>{busy ? "工作中…" : `${graph?.commits.length ?? 0} / ${graph?.total ?? 0} 提交`}</span>
+        <span>
+          {gitRuntime
+            ? `${gitRuntime.source === "bundled" ? "内置" : "系统"} ${gitRuntime.version || "Git"}`
+            : "正在检测 Git…"}
+          {" · "}
+          {busy ? "工作中…" : `${graph?.commits.length ?? 0} / ${graph?.total ?? 0} 提交`}
+        </span>
       </footer>
 
       {error ? (

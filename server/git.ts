@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { setupGitProcessEnv } from "./gitEnv.js";
 
 export class GitError extends Error {
   readonly name = "GitError";
@@ -59,16 +60,13 @@ export function runGit(
   const timeoutMs = options.timeoutMs ?? 30_000;
   const fullArgs = ["-c", "core.quotepath=false", "-c", "color.ui=false", ...args];
 
+  const { gitBinary, env } = setupGitProcessEnv();
+
   return new Promise((resolve, reject) => {
-    const child = spawn("git", fullArgs, {
+    const child = spawn(gitBinary, fullArgs, {
       cwd,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_OPTIONAL_LOCKS: "0",
-        LANG: "C",
-        LC_ALL: "C",
-      },
+      env,
+      windowsHide: true,
     });
 
     let stdout = "";
@@ -93,6 +91,15 @@ export function runGit(
 
     child.on("error", (error) => {
       clearTimeout(timer);
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        reject(
+          new Error(
+            `未找到 Git 可执行文件（${gitBinary}）。请使用本应用的安装包（已内置 Git），或在开发环境安装 Git。`,
+          ),
+        );
+        return;
+      }
       reject(error);
     });
 

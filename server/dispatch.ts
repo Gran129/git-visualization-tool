@@ -1,4 +1,6 @@
 import { GitError } from "./git.js";
+import { getGitRuntimeInfo } from "./gitEnv.js";
+import { ensureUserGitOnPath } from "./gitInstall.js";
 import * as ops from "./ops.js";
 
 export type InvokePayload = Record<string, unknown>;
@@ -43,7 +45,11 @@ function repoOf(payload: InvokePayload): string {
 export async function dispatch(method: string, payload: InvokePayload = {}): Promise<unknown> {
   switch (method) {
     case "health":
-      return { service: "git-visualization-tool" };
+      return { service: "git-visualization-tool", git: getGitRuntimeInfo() };
+    case "gitRuntime":
+      return getGitRuntimeInfo();
+    case "installGit":
+      return ensureUserGitOnPath({ force: bool(payload, "force") });
     case "defaultPath":
       return { path: ops.defaultRepoPath(), home: ops.homedir() };
     case "open":

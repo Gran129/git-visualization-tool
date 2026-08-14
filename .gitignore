@@ -11,3 +11,4 @@ coverage/
 tmp/
 .idea/
 .vscode/
+resources/git/*/

@@ -5,6 +5,8 @@ import type {
   CommitDetail,
   CommitFile,
   DiffPayload,
+  GitInstallResult,
+  GitRuntimeInfo,
   GraphPayload,
   RefInfo,
   ReflogEntry,
@@ -259,6 +261,12 @@ export const api = {
   clone: (url: string, dest: string) =>
     call<RepoSummary>("clone", { url, dest }, () =>
       request("/api/clone", { method: "POST", body: JSON.stringify({ url, dest }) }),
+    ),
+  gitRuntime: () =>
+    call<GitRuntimeInfo>("gitRuntime", {}, () => request("/api/git-runtime")),
+  installGit: (force = false) =>
+    call<GitInstallResult>("installGit", { force }, () =>
+      request("/api/git-install", { method: "POST", body: JSON.stringify({ force }) }),
     ),
 };
 

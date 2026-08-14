@@ -5,6 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GitError, isGitRepo } from "./git.js";
 import type { GitRunResult } from "./git.js";
+import { getGitRuntimeInfo } from "./gitEnv.js";
+import { ensureUserGitOnPath } from "./gitInstall.js";
 import * as ops from "./ops.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -68,7 +70,15 @@ export function createApp(): express.Express {
   app.use(express.json({ limit: "2mb" }));
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, data: { service: "git-visualization-tool" } });
+    res.json({ ok: true, data: { service: "git-visualization-tool", git: getGitRuntimeInfo() } });
+  });
+
+  app.get("/api/git-runtime", (_req, res) => {
+    res.json({ ok: true, data: getGitRuntimeInfo() });
+  });
+
+  app.post("/api/git-install", (req, res) => {
+    wrap(res, async () => ensureUserGitOnPath({ force: Boolean(req.body?.force) }));
   });
 
   app.get("/api/default-path", (_req, res) => {

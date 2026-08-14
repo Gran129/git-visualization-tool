@@ -9,14 +9,15 @@
   "scripts": {
     "dev": "npm run build:electron && concurrently -k -n web,app -c green,magenta \"vite\" \"wait-on http://127.0.0.1:5173 && GIT_VIZ_DEV=1 electron .\"",
     "dev:web": "concurrently -k -n server,web -c blue,green \"tsx watch server/index.ts\" \"vite\"",
+    "prepare:git": "node scripts/prepare-bundled-git.mjs",
     "build:electron": "node scripts/build-electron.mjs",
     "build": "npm run build:electron && tsc -p tsconfig.server.json && vite build",
     "start": "electron .",
     "start:web": "NODE_ENV=production node dist/server/index.js",
-    "dist": "npm run build && electron-builder --publish never",
-    "dist:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
-    "dist:win": "npm run build && electron-builder --win nsis --publish never",
-    "dist:mac": "npm run build && electron-builder --mac dmg --publish never",
+    "dist": "npm run prepare:git && npm run build && electron-builder --publish never",
+    "dist:linux": "npm run prepare:git -- --os linux && npm run build && electron-builder --linux AppImage deb --publish never",
+    "dist:win": "npm run prepare:git -- --os win --arch x64 && npm run build && electron-builder --win nsis --publish never",
+    "dist:mac": "npm run prepare:git -- --os mac && npm run build && electron-builder --mac dmg --publish never",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "lint": "eslint ."
@@ -65,6 +66,15 @@
       "!node_modules/**"
     ],
     "asar": true,
+    "extraResources": [
+      {
+        "from": "resources/git/${os}-${arch}/",
+        "to": "git",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",

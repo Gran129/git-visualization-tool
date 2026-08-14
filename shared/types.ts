@@ -134,6 +134,23 @@ export interface SearchHit {
   timestamp: number;
 }
 
+export interface GitRuntimeInfo {
+  version: string;
+  binary: string;
+  source: "bundled" | "system";
+  gitDir: string | null;
+}
+
+export interface GitInstallResult {
+  action: "installed" | "already-installed" | "skipped-system-git" | "skipped-no-bundle" | "skipped-disabled";
+  runtime: GitRuntimeInfo;
+  userGitDir: string;
+  shimPath: string;
+  gitOnPath: boolean;
+  installedByApp: boolean;
+  message: string;
+}
+
 export interface CommandResult {
   ok: true;
   stdout: string;
