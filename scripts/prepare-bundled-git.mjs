@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export const DUGITE_RELEASE = "v2.53.0-4";
+export const DUGITE_VERSION = "v2.53.0";
 export const DUGITE_BUILD = "4098283";
 export const GIT_VERSION = "2.53.0";
 
@@ -150,7 +151,7 @@ async function prepareOne(targetKey) {
     return dest;
   }
 
-  const fileName = `dugite-native-${DUGITE_RELEASE}-${DUGITE_BUILD}-${spec.asset}.tar.gz`;
+  const fileName = `dugite-native-${DUGITE_VERSION}-${DUGITE_BUILD}-${spec.asset}.tar.gz`;
   const url = `https://github.com/desktop/dugite-native/releases/download/${DUGITE_RELEASE}/${fileName}`;
   const work = path.join(tmpdir(), `git-viz-dugite-${targetKey}-${process.pid}`);
   rmSync(work, { recursive: true, force: true });
