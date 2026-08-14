@@ -85,6 +85,11 @@ export function createApp(): express.Express {
     res.json({ ok: true, data: { path: ops.defaultRepoPath(), home: ops.homedir() } });
   });
 
+  app.get("/api/is-repo", (req, res) => {
+    const input = typeof req.query.path === "string" ? req.query.path : "";
+    res.json({ ok: true, data: ops.inspectRepoPath(input) });
+  });
+
   app.post("/api/repo/open", (req, res) => {
     wrap(res, async () => {
       const input = String(req.body?.path ?? "");

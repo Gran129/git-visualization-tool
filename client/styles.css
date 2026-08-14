@@ -706,7 +706,151 @@ select:focus {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+.welcome {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 1px 1px, #21262d 1px, transparent 0) 0 0 / 18px 18px,
+    var(--bg);
+  color: var(--text);
+  animation: fade-up 0.35s ease;
+}
+
+.welcome-boot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.welcome-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  display: grid;
+  gap: 28px;
+}
+
+.welcome-hero h1 {
+  margin: 8px 0 10px;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.welcome-hero p,
+.welcome-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.welcome-brand {
+  color: var(--accent);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.welcome-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.welcome-card,
+.welcome-recents {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  animation: dialog-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.welcome-card h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.welcome-kicker {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.welcome-row {
+  display: flex;
+  gap: 8px;
+}
+
+.welcome-card input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.welcome-row input {
+  flex: 1;
+}
+
+.welcome-hosts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.welcome-hosts button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.welcome-hosts span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.welcome-note {
+  color: var(--accent) !important;
+}
+
+.welcome-recents ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.welcome-recents li button {
+  width: 100%;
+  text-align: left;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.welcome-busy {
+  position: sticky;
+  bottom: 16px;
+  justify-self: start;
+  background: var(--bg-elev);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+@media (max-width: 840px) {
+  .welcome-grid,
+  .welcome-hosts {
+    grid-template-columns: 1fr;
+  }
+}
   *,
   *::before,
   *::after {
@@ -722,7 +866,8 @@ select:focus {
   .dialog,
   .dialog-backdrop,
   .toast,
-  .graph-empty {
+  .graph-empty,
+  .welcome {
     opacity: 1;
     transform: none;
     stroke-dashoffset: 0;

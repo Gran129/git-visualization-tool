@@ -898,3 +898,11 @@ export function defaultRepoPath(): string {
 export function homedir(): string {
   return os.homedir();
 }
+
+export function inspectRepoPath(input: string): { path: string; isRepo: boolean } {
+  if (typeof input !== "string" || input.trim().length === 0) {
+    return { path: "", isRepo: false };
+  }
+  const resolved = path.resolve(input);
+  return { path: resolved, isRepo: isGitRepo(resolved) };
+}

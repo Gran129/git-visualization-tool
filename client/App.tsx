@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { DiffView } from "./components/DiffView";
 import { GraphView } from "./components/GraphView";
+import { WelcomeView } from "./components/WelcomeView";
 import { laneColor } from "./components/GraphView";
 import type {
   BlameLine,
@@ -77,63 +78,123 @@ export function App() {
   const [dialogExtra, setDialogExtra] = useState("");
   const [recents, setRecents] = useState<string[]>(loadRecents());
   const [gitRuntime, setGitRuntime] = useState<GitRuntimeInfo | null>(null);
+  const [homeDir, setHomeDir] = useState("");
+  const [booting, setBooting] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const showError = (err: unknown) => {
     setError(err instanceof Error ? err.message : String(err));
   };
 
-  const refresh = useCallback(
-    async (repoPath: string) => {
-      setBusy(true);
+  const refresh = useCallback(async (repoPath: string, opts?: { silent?: boolean }): Promise<boolean> => {
+    setBusy(true);
+    if (!opts?.silent) {
       setError(null);
-      try {
-        const [nextSummary, nextGraph, nextRefs, nextStatus, nextStash] = await Promise.all([
-          api.repo(repoPath),
-          api.graph(repoPath),
-          api.refs(repoPath),
-          api.status(repoPath),
-          api.stash(repoPath),
-        ]);
-        setSummary(nextSummary);
-        setGraph(nextGraph);
-        setRefs(nextRefs);
-        setStatus(nextStatus);
-        setStash(nextStash);
-        setSelected((current) => current ?? nextGraph.head);
-        saveRecent(repoPath);
-        setRecents(loadRecents());
-      } catch (err) {
+    }
+    try {
+      const [nextSummary, nextGraph, nextRefs, nextStatus, nextStash] = await Promise.all([
+        api.repo(repoPath),
+        api.graph(repoPath),
+        api.refs(repoPath),
+        api.status(repoPath),
+        api.stash(repoPath),
+      ]);
+      setSummary(nextSummary);
+      setGraph(nextGraph);
+      setRefs(nextRefs);
+      setStatus(nextStatus);
+      setStash(nextStash);
+      setSelected((current) => current ?? nextGraph.head);
+      saveRecent(repoPath);
+      setRecents(loadRecents());
+      return true;
+    } catch (err) {
+      if (!opts?.silent) {
         showError(err);
-      } finally {
-        setBusy(false);
+      }
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const adoptRepo = useCallback(
+    async (repoPath: string, opts?: { silent?: boolean }): Promise<boolean> => {
+      const ok = await refresh(repoPath, opts);
+      if (ok) {
+        setPath(repoPath);
+        setPathDraft(repoPath);
+        setShowWelcome(false);
+      }
+      return ok;
+    },
+    [refresh],
+  );
+
+  const enterRepo = useCallback(
+    async (repoPath: string, opts?: { silent?: boolean }): Promise<boolean> => {
+      try {
+        const opened = await api.open(repoPath);
+        return await adoptRepo(opened.path, opts);
+      } catch (err) {
+        if (!opts?.silent) {
+          showError(err);
+        }
+        return false;
       }
     },
-    [],
+    [adoptRepo],
   );
 
   useEffect(() => {
+    let cancelled = false;
+    const stopOpenPath = api.onOpenPath((dir) => {
+      void enterRepo(dir);
+    });
     void (async () => {
       try {
         const runtime = await api.gitRuntime();
-        setGitRuntime(runtime);
+        if (!cancelled) {
+          setGitRuntime(runtime);
+        }
       } catch {
         // ignore — status bar will hide git info
       }
       try {
         const defaults = await api.defaultPath();
-        setPath(defaults.path);
-        setPathDraft(defaults.path);
-        await refresh(defaults.path);
-      } catch (err) {
-        showError(err);
+        if (!cancelled) {
+          setHomeDir(defaults.home);
+        }
+      } catch {
+        // home is only used for clone/init suggestions
+      }
+
+      for (const candidate of loadRecents()) {
+        if (cancelled) {
+          return;
+        }
+        try {
+          const check = await api.isRepo(candidate);
+          if (!check.isRepo) {
+            continue;
+          }
+          const ok = await enterRepo(check.path, { silent: true });
+          if (ok) {
+            break;
+          }
+        } catch {
+          // skip recents that no longer exist
+        }
+      }
+      if (!cancelled) {
+        setBooting(false);
       }
     })();
-    return api.onOpenPath((dir) => {
-      setPathDraft(dir);
-      setPath(dir);
-      void refresh(dir);
-    });
-  }, [refresh]);
+    return () => {
+      cancelled = true;
+      stopOpenPath();
+    };
+  }, [enterRepo]);
 
   useEffect(() => {
     if (!path || !selected || tab !== "commit") {
@@ -146,12 +207,40 @@ export function App() {
   }, [path, selected, tab]);
 
   const openRepo = async () => {
+    await enterRepo(pathDraft);
+  };
+
+  const cloneFromWelcome = async (url: string, dest: string) => {
+    setBusy(true);
+    setError(null);
     try {
-      const opened = await api.open(pathDraft);
-      setPath(opened.path);
-      await refresh(opened.path);
+      const created = await api.clone(url, dest);
+      await adoptRepo(created.path);
     } catch (err) {
       showError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const initFromWelcome = async (dest: string, remoteUrl: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const existing = await api.isRepo(dest);
+      if (existing.isRepo) {
+        await adoptRepo(existing.path);
+        return;
+      }
+      const created = await api.init(dest);
+      if (remoteUrl) {
+        await api.remote(created.path, { action: "add", name: "origin", url: remoteUrl });
+      }
+      await adoptRepo(created.path);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -190,7 +279,17 @@ export function App() {
   };
 
   const submitDialog = async () => {
-    if (!path || !dialog) {
+    if (!dialog) {
+      return;
+    }
+    if (dialog === "clone") {
+      await cloneFromWelcome(dialogValue, dialogExtra);
+      setDialog(null);
+      setDialogValue("");
+      setDialogExtra("");
+      return;
+    }
+    if (!path) {
       return;
     }
     await run(async () => {
@@ -212,11 +311,6 @@ export function App() {
           await api.reset(path, selected ?? dialogValue, mode);
           break;
         }
-        case "clone":
-          await api.clone(dialogValue, dialogExtra);
-          setPath(dialogExtra);
-          setPathDraft(dialogExtra);
-          break;
         case "remote":
           await api.remote(path, { action: "add", name: dialogValue, url: dialogExtra });
           break;
@@ -237,6 +331,41 @@ export function App() {
     setDialogValue("");
     setDialogExtra("");
   };
+
+  if (booting) {
+    return (
+      <div className="welcome welcome-boot">
+        <div className="welcome-inner">
+          <div className="welcome-brand">Git可视化工具</div>
+          <p>正在准备…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showWelcome) {
+    return (
+      <>
+        <WelcomeView
+          recents={recents}
+          homeDir={homeDir}
+          busy={busy}
+          canBrowse={api.isDesktop()}
+          onOpenLocal={async (repoPath) => {
+            await enterRepo(repoPath);
+          }}
+          onPickDirectory={() => api.selectDirectory()}
+          onClone={cloneFromWelcome}
+          onInit={initFromWelcome}
+        />
+        {error ? (
+          <div className="toast" onClick={() => setError(null)}>
+            {error}
+          </div>
+        ) : null}
+      </>
+    );
+  }
 
   return (
     <div className={`app${busy ? " is-busy" : ""}`}>
@@ -259,9 +388,7 @@ export function App() {
               if (!dir) {
                 return;
               }
-              setPathDraft(dir);
-              setPath(dir);
-              void refresh(dir);
+              void enterRepo(dir);
             });
           }}
         >
@@ -344,9 +471,7 @@ export function App() {
               key={item}
               className="ref-item"
               onClick={() => {
-                setPathDraft(item);
-                setPath(item);
-                void refresh(item);
+                void enterRepo(item);
               }}
             >
               {item}

@@ -96,6 +96,10 @@ export const api = {
     call<{ service: string }>("health", {}, () => request("/api/health")),
   defaultPath: () =>
     call<{ path: string; home: string }>("defaultPath", {}, () => request("/api/default-path")),
+  isRepo: (path: string) =>
+    call<{ path: string; isRepo: boolean }>("isRepo", { path }, () =>
+      request(`/api/is-repo?${withPath(path)}`),
+    ),
   open: (path: string) =>
     call<RepoSummary>("open", { path }, () =>
       request("/api/repo/open", { method: "POST", body: JSON.stringify({ path }) }),
