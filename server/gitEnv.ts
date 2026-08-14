@@ -18,7 +18,13 @@ export interface GitRuntimeInfo {
   gitDir: string | null;
 }
 
-const here = path.dirname(fileURLToPath(import.meta.url));
+function thisDir(): string {
+  const url = import.meta.url;
+  if (typeof url === "string" && url.startsWith("file:")) {
+    return path.dirname(fileURLToPath(url));
+  }
+  return process.cwd();
+}
 
 let cached: ResolvedGit | null = null;
 
@@ -68,7 +74,7 @@ function gitBinaryInDir(gitDir: string): string | null {
 }
 
 function findProjectRoot(): string | null {
-  let dir = here;
+  let dir = thisDir();
   for (let i = 0; i < 8; i += 1) {
     if (fs.existsSync(path.join(dir, "package.json"))) {
       return dir;
@@ -111,8 +117,8 @@ export function findBundledGitDir(): string | null {
     candidates.push(path.join(project, "resources", "git", target));
   }
   candidates.push(path.join(process.cwd(), "resources", "git", target));
-  candidates.push(path.join(here, "..", "resources", "git", target));
-  candidates.push(path.join(here, "../..", "resources", "git", target));
+  candidates.push(path.join(thisDir(), "..", "resources", "git", target));
+  candidates.push(path.join(thisDir(), "../..", "resources", "git", target));
 
   for (const dir of candidates) {
     if (gitBinaryInDir(dir)) {

@@ -1,5 +1,7 @@
 import esbuild from "esbuild";
 
+const importMetaUrlBanner = 'var import_meta_url = require("node:url").pathToFileURL(__filename).href;';
+
 await esbuild.build({
   entryPoints: ["electron/main.ts"],
   bundle: true,
@@ -9,6 +11,8 @@ await esbuild.build({
   external: ["electron"],
   sourcemap: true,
   logLevel: "info",
+  banner: { js: importMetaUrlBanner },
+  define: { "import.meta.url": "import_meta_url" },
 });
 
 await esbuild.build({
