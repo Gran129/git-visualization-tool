@@ -1,10 +1,11 @@
-import type { GraphCommit } from "../shared/types";
+import type { GraphCommit, GraphCommitRole } from "../shared/types";
 
 export const STRING_NODE_WIDTH = 260;
 export const STRING_NODE_GAP_X = 36;
 export const STRING_NODE_GAP_Y = 28;
 export const STRING_NODE_PAD = 24;
 export const STRING_NODE_MIN_HEIGHT = 88;
+export const GHOST_NODE_HEIGHT = 64;
 export const STRING_NODE_MAX_BODY_LINES = 8;
 export const CHARS_PER_LINE = 18;
 
@@ -21,6 +22,10 @@ export interface StringNode {
   timestamp: number;
   refs: string[];
   lane: number;
+  role: GraphCommitRole;
+  seriesId: string;
+  ghost: boolean;
+  missingParents: string[];
   x: number;
   y: number;
   width: number;
@@ -36,7 +41,6 @@ export interface SeriesLine {
   kind: "series";
   fromHash: string;
   toHash: string;
-  /** negative = 子到父（回溯）；positive = 父到子（前进）。渲染时同属系列，不分工。 */
   polarity: SeriesPolarity;
   lane: number;
   x1: number;
@@ -91,7 +95,10 @@ export function fullComment(subject: string, body: string): string {
   return `${head}\n\n${rest}`;
 }
 
-export function stringNodeHeight(subject: string, body: string): number {
+export function stringNodeHeight(subject: string, body: string, ghost = false): number {
+  if (ghost) {
+    return GHOST_NODE_HEIGHT;
+  }
   const subjectLines = Math.max(1, countWrappedLines(subject || "(无说明)"));
   const bodyLines = Math.min(countWrappedLines(body), STRING_NODE_MAX_BODY_LINES);
   const textHeight = subjectLines * 20 + (bodyLines > 0 ? 10 + bodyLines * 17 : 0);
@@ -140,6 +147,38 @@ export function mergeConstantSegments(lines: ConstantLine[]): ConstantLine[] {
   return merged;
 }
 
+function liveSeriesConstantLines(nodes: StringNode[]): ConstantLine[] {
+  const byLane = new Map<number, StringNode[]>();
+  for (const node of nodes) {
+    const group = byLane.get(node.lane) ?? [];
+    group.push(node);
+    byLane.set(node.lane, group);
+  }
+  const lines: ConstantLine[] = [];
+  for (const node of nodes) {
+    if (node.ghost) {
+      continue;
+    }
+    for (const [lane, members] of byLane) {
+      if (lane === node.lane) {
+        continue;
+      }
+      const hasAbove = members.some((member) => member.bottom <= node.top);
+      const hasBelow = members.some((member) => member.top >= node.bottom);
+      if (hasAbove && hasBelow) {
+        lines.push({
+          kind: "constant",
+          lane,
+          x: laneCenterX(lane),
+          y1: node.top - STRING_NODE_GAP_Y / 2,
+          y2: node.bottom + STRING_NODE_GAP_Y / 2,
+        });
+      }
+    }
+  }
+  return lines;
+}
+
 export function layoutStringGraph(commits: GraphCommit[]): StringGraphLayout {
   const nodes: StringNode[] = [];
   let y = STRING_NODE_PAD;
@@ -147,20 +186,24 @@ export function layoutStringGraph(commits: GraphCommit[]): StringGraphLayout {
 
   for (const commit of commits) {
     const width = STRING_NODE_WIDTH;
-    const height = stringNodeHeight(commit.subject, commit.body);
+    const height = stringNodeHeight(commit.subject, commit.body, commit.ghost);
     const x = STRING_NODE_PAD + commit.lane * (STRING_NODE_WIDTH + STRING_NODE_GAP_X);
-    const comment = fullComment(commit.subject, commit.body);
+    const comment = commit.ghost ? "父提交未载入" : fullComment(commit.subject, commit.body);
     maxLane = Math.max(maxLane, commit.lane, ...commit.throughLanes);
     nodes.push({
       hash: commit.hash,
       shortHash: commit.shortHash,
-      subject: commit.subject,
-      body: commit.body,
+      subject: commit.ghost ? "父提交未载入" : commit.subject,
+      body: commit.ghost ? "" : commit.body,
       comment,
       author: commit.author,
       timestamp: commit.timestamp,
       refs: commit.refs,
       lane: commit.lane,
+      role: commit.role,
+      seriesId: commit.seriesId,
+      ghost: commit.ghost,
+      missingParents: commit.missingParents,
       x,
       y,
       width,
@@ -175,7 +218,7 @@ export function layoutStringGraph(commits: GraphCommit[]): StringGraphLayout {
 
   const byHash = new Map(nodes.map((node) => [node.hash, node]));
   const seriesLines: SeriesLine[] = [];
-  const constantRaw: ConstantLine[] = [];
+  const constantRaw: ConstantLine[] = [...liveSeriesConstantLines(nodes)];
 
   for (const commit of commits) {
     const from = byHash.get(commit.hash);
@@ -198,7 +241,6 @@ export function layoutStringGraph(commits: GraphCommit[]): StringGraphLayout {
       if (!to) {
         return;
       }
-      // 子→父是负向，父→子是正向；二者同属系列，只画这一条。
       seriesLines.push({
         kind: "series",
         fromHash: from.hash,

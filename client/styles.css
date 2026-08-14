@@ -206,6 +206,50 @@ button:disabled {
   border-top: 2px solid #6e7681;
 }
 
+.line-legend-item.ghost i {
+  border-top: 2px dashed #6e7681;
+}
+
+.string-node.ghost {
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.85;
+  box-shadow: none;
+  cursor: default;
+}
+
+.string-node.ghost:disabled {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.badge.role {
+  background: #2d333b;
+  color: var(--text);
+}
+
+.badge.role.merge,
+.badge.role.octopus {
+  background: #3d2f00;
+  color: var(--orange);
+}
+
+.badge.role.root {
+  background: #1b4332;
+  color: var(--green);
+}
+
+.badge.role.cherryPick,
+.badge.role.revert {
+  background: #1f3a5f;
+  color: var(--accent);
+}
+
+.badge.role.stash {
+  background: #3b2d4a;
+  color: var(--purple);
+}
+
 .subtraction-line.series {
   stroke-width: 2.5;
 }

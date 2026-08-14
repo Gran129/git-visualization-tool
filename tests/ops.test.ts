@@ -73,6 +73,8 @@ describe("git operations", () => {
     if (!merge) {
       throw new Error("expected merge commit");
     }
+    expect(merge.role).toBe("merge");
+    expect(merge.ghost).toBe(false);
     const detail = await getCommitDetail(repo, merge.hash);
     expect(detail.files.some((file) => file.path === "feature.txt")).toBe(true);
 

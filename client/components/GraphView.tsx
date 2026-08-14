@@ -1,4 +1,4 @@
-import type { GraphCommit } from "../../shared/types";
+import type { GraphCommit, GraphCommitRole } from "../../shared/types";
 import { layoutStringGraph, seriesPath } from "../stringGraph";
 
 const LANE_COLORS = [
@@ -12,6 +12,15 @@ const LANE_COLORS = [
   "#ff7b72",
 ];
 
+const ROLE_LABEL: Partial<Record<GraphCommitRole, string>> = {
+  root: "根",
+  merge: "合并",
+  octopus: "章鱼合并",
+  cherryPick: "摘取",
+  revert: "撤销",
+  stash: "Stash",
+};
+
 export function laneColor(lane: number): string {
   const color = LANE_COLORS[lane % LANE_COLORS.length];
   return color ?? "#58a6ff";
@@ -22,6 +31,7 @@ interface GraphViewProps {
   laneCount: number;
   head: string | null;
   selected: string | null;
+  detached?: boolean;
   onSelect: (hash: string) => void;
 }
 
@@ -36,13 +46,13 @@ function formatTime(timestamp: number): string {
   return date.toLocaleString();
 }
 
-export function GraphView({ commits, head, selected, onSelect }: GraphViewProps) {
+export function GraphView({ commits, head, selected, detached, onSelect }: GraphViewProps) {
   const layout = layoutStringGraph(commits);
 
   return (
     <div className="graph-pane">
       <div className="string-graph-header">
-        <strong>提交说明</strong>
+        <strong>节点树</strong>
         <span className="line-legend">
           <span className="line-legend-item series">
             <i />
@@ -51,6 +61,11 @@ export function GraphView({ commits, head, selected, onSelect }: GraphViewProps)
           <span className="line-legend-item constant">
             <i />
             恒定线：贯穿泳道，横坐标不变
+          </span>
+          <span className="line-legend-item">旁支是另一条系列，相对主线以恒定线贯穿</span>
+          <span className="line-legend-item ghost">
+            <i />
+            虚父表示父提交未载入
           </span>
         </span>
       </div>
@@ -88,11 +103,12 @@ export function GraphView({ commits, head, selected, onSelect }: GraphViewProps)
             const isSelected = selected === node.hash;
             const isHead = head === node.hash;
             const color = laneColor(node.lane);
+            const roleLabel = node.ghost ? null : (ROLE_LABEL[node.role] ?? null);
             return (
               <button
                 key={node.hash}
                 type="button"
-                className={`string-node${isSelected ? " selected" : ""}${isHead ? " is-head" : ""}`}
+                className={`string-node${isSelected ? " selected" : ""}${isHead ? " is-head" : ""}${node.ghost ? " ghost" : ""}`}
                 style={{
                   left: node.x,
                   top: node.y,
@@ -102,12 +118,18 @@ export function GraphView({ commits, head, selected, onSelect }: GraphViewProps)
                   borderColor: isSelected || isHead ? color : undefined,
                 }}
                 title={node.comment}
-                onClick={() => onSelect(node.hash)}
+                disabled={node.ghost}
+                onClick={() => {
+                  if (!node.ghost) {
+                    onSelect(node.hash);
+                  }
+                }}
               >
                 <span className="string-node-dot" style={{ background: color }} />
                 <span className="string-node-meta">
                   <span className="hash">{node.shortHash}</span>
-                  {isHead ? <span className="badge head">HEAD</span> : null}
+                  {isHead ? <span className="badge head">{detached ? "HEAD 分离" : "HEAD"}</span> : null}
+                  {roleLabel ? <span className={`badge role ${node.role}`}>{roleLabel}</span> : null}
                   {node.refs.map((ref) => (
                     <span key={ref} className={`badge${/tag/i.test(ref) ? " tag" : ""}`}>
                       {ref}
@@ -116,10 +138,14 @@ export function GraphView({ commits, head, selected, onSelect }: GraphViewProps)
                 </span>
                 <span className="string-node-subject">{node.subject || "(无说明)"}</span>
                 {node.body ? <span className="string-node-body">{node.body}</span> : null}
-                <span className="string-node-author muted">
-                  {node.author}
-                  {node.timestamp ? ` · ${formatTime(node.timestamp)}` : ""}
-                </span>
+                {node.ghost ? (
+                  <span className="string-node-author muted">窗口外或浅克隆未载入的父提交</span>
+                ) : (
+                  <span className="string-node-author muted">
+                    {node.author}
+                    {node.timestamp ? ` · ${formatTime(node.timestamp)}` : ""}
+                  </span>
+                )}
               </button>
             );
           })}

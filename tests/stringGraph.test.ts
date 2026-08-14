@@ -20,6 +20,10 @@ function commit(partial: Partial<GraphCommit> & Pick<GraphCommit, "hash" | "pare
     lane: 0,
     edges: [],
     throughLanes: [],
+    role: "series",
+    seriesId: partial.hash,
+    missingParents: [],
+    ghost: false,
     ...partial,
   };
 }
@@ -43,7 +47,7 @@ describe("string graph comments", () => {
   it("draws parent and child as one series line, not two opposite kinds", () => {
     const layout = layoutStringGraph([
       commit({ hash: "child", parents: ["parent"], subject: "child comment", lane: 0 }),
-      commit({ hash: "parent", parents: [], subject: "parent comment", body: "details", lane: 0 }),
+      commit({ hash: "parent", parents: [], subject: "parent comment", body: "details", lane: 0, role: "root" }),
     ]);
     expect(layout.nodes).toHaveLength(2);
     expect(layout.seriesLines).toHaveLength(1);
@@ -68,10 +72,11 @@ describe("string graph comments", () => {
         subject: "merge",
         lane: 0,
         throughLanes: [1],
+        role: "merge",
       }),
       commit({ hash: "a", parents: ["c"], subject: "on main", lane: 0 }),
-      commit({ hash: "b", parents: ["c"], subject: "on feature", lane: 1 }),
-      commit({ hash: "c", parents: [], subject: "root", lane: 0, throughLanes: [1] }),
+      commit({ hash: "b", parents: ["c"], subject: "on feature", lane: 1, seriesId: "b" }),
+      commit({ hash: "c", parents: [], subject: "root", lane: 0, throughLanes: [1], role: "root" }),
     ]);
     const mergeSeries = layout.seriesLines.filter((line) => line.fromHash === "m");
     expect(mergeSeries).toHaveLength(2);
@@ -82,6 +87,28 @@ describe("string graph comments", () => {
     const feature = layout.nodes.find((node) => node.hash === "b");
     const main = layout.nodes.find((node) => node.hash === "a");
     expect(feature?.x).toBeGreaterThan(main?.x ?? 0);
+  });
+
+  it("draws a ghost parent when the real parent is missing", () => {
+    const layout = layoutStringGraph([
+      commit({
+        hash: "c",
+        parents: ["missing"],
+        subject: "newest",
+        missingParents: ["missing"],
+      }),
+      commit({
+        hash: "missing",
+        parents: [],
+        subject: "",
+        ghost: true,
+        role: "series",
+      }),
+    ]);
+    const ghost = layout.nodes.find((node) => node.hash === "missing");
+    expect(ghost?.ghost).toBe(true);
+    expect(ghost?.subject).toBe("父提交未载入");
+    expect(layout.seriesLines.some((line) => line.fromHash === "c" && line.toHash === "missing")).toBe(true);
   });
 
   it("merges overlapping constant segments on the same lane", () => {

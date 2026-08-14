@@ -434,13 +434,14 @@ export function App() {
             laneCount={graph.laneCount}
             head={graph.head}
             selected={selected}
+            detached={Boolean(summary?.detached)}
             onSelect={(hash) => {
               setSelected(hash);
               setTab("commit");
             }}
           />
         ) : (
-          <div className="graph-pane panel-body muted">打开仓库后，提交说明会以字符串节点显示，并用连线接在一起</div>
+          <div className="graph-pane panel-body muted">打开仓库后，节点树会用字符串节点、系列线和恒定线画出全部提交关系</div>
         )}
 
         <section className="detail">

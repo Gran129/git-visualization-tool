@@ -24,6 +24,8 @@ export interface RefInfo {
   upstream?: string;
 }
 
+export type GraphCommitRole = "root" | "series" | "merge" | "octopus" | "cherryPick" | "revert" | "stash";
+
 export interface GraphCommit {
   hash: string;
   shortHash: string;
@@ -37,6 +39,10 @@ export interface GraphCommit {
   lane: number;
   edges: GraphEdge[];
   throughLanes: number[];
+  role: GraphCommitRole;
+  seriesId: string;
+  missingParents: string[];
+  ghost: boolean;
 }
 
 export interface GraphEdge {

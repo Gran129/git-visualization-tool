@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { GitError, gitOk, isGitRepo, resolveRepo, runGit } from "./git.js";
-import { layoutCommitGraph } from "./graph.js";
+import { assignSeriesIds, classifyCommitRole, layoutCommitGraph } from "./graph.js";
 import type {
   BlameLine,
   CommitDetail,
@@ -214,23 +214,49 @@ export async function getGraph(
   }
 
   const layout = layoutCommitGraph(rawCommits);
-  const layoutByHash = new Map(layout.commits.map((item) => [item.hash, item]));
+  const seriesIds = assignSeriesIds(layout.commits);
+  const rawByHash = new Map(rawCommits.map((item) => [item.hash, item]));
   const headResult = await runGit(repo, ["rev-parse", "HEAD"], { allowFailure: true });
-  const commits: GraphCommit[] = rawCommits.map((commit) => {
-    const laid = layoutByHash.get(commit.hash);
+  const stashResult = await runGit(repo, ["stash", "list", "--format=%H"], { allowFailure: true });
+  const stashHashes = new Set(
+    stashResult.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  );
+
+  const commits: GraphCommit[] = layout.commits.map((laid) => {
+    const raw = rawByHash.get(laid.hash);
+    const ghost = laid.ghost;
+    const parents = raw?.parents ?? laid.parents;
+    const subject = raw?.subject ?? "";
+    const body = raw?.body ?? "";
+    const refs = raw?.refs ?? [];
     return {
-      hash: commit.hash,
-      shortHash: commit.hash.slice(0, 7),
-      parents: commit.parents,
-      author: commit.author,
-      email: commit.email,
-      timestamp: commit.timestamp,
-      subject: commit.subject,
-      body: commit.body,
-      refs: commit.refs,
-      lane: laid?.lane ?? 0,
-      edges: laid?.edges ?? [],
-      throughLanes: laid?.throughLanes ?? [],
+      hash: laid.hash,
+      shortHash: laid.hash.slice(0, 7),
+      parents,
+      author: raw?.author ?? "",
+      email: raw?.email ?? "",
+      timestamp: raw?.timestamp ?? 0,
+      subject,
+      body,
+      refs,
+      lane: laid.lane,
+      edges: laid.edges,
+      throughLanes: laid.throughLanes,
+      role: classifyCommitRole({
+        hash: laid.hash,
+        parents,
+        subject,
+        body,
+        refs,
+        ghost,
+        stashHashes,
+      }),
+      seriesId: seriesIds.get(laid.hash) ?? laid.hash,
+      missingParents: parents.filter((parent) => layout.ghostHashes.has(parent)),
+      ghost,
     };
   });
 
