@@ -110,6 +110,18 @@ export function seriesPath(line: SeriesLine): string {
   return `M ${line.x1} ${line.y1} C ${line.x1} ${midY}, ${line.x2} ${midY}, ${line.x2} ${line.y2}`;
 }
 
+/** 节点树入场错开延迟；超过 cap 后不再继续拉长，避免大仓库打开过慢。 */
+export function staggerDelayMs(index: number, stepMs = 28, cap = 26): number {
+  if (!Number.isFinite(index) || index <= 0) {
+    return 0;
+  }
+  return Math.min(Math.floor(index), cap) * stepMs;
+}
+
+export function staggerDelay(index: number, stepMs = 28, cap = 26): string {
+  return `${staggerDelayMs(index, stepMs, cap)}ms`;
+}
+
 export function mergeConstantSegments(lines: ConstantLine[]): ConstantLine[] {
   const byLane = new Map<number, ConstantLine[]>();
   for (const line of lines) {

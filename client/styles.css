@@ -42,10 +42,21 @@ button {
   border-radius: 6px;
   padding: 5px 10px;
   cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.12s ease,
+    opacity 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 button:hover {
   border-color: var(--accent);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 button.primary {
@@ -69,6 +80,7 @@ button:disabled {
 }
 
 .toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -77,12 +89,33 @@ button:disabled {
   background: var(--bg-elev);
 }
 
+.toolbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--green), transparent);
+  background-size: 45% 100%;
+  background-repeat: no-repeat;
+  background-position: -40% 0;
+}
+
+.app.is-busy .toolbar::after {
+  opacity: 1;
+  animation: busy-scan 1.15s ease-in-out infinite;
+}
+
 .toolbar input.path {
   flex: 1;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 10px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .brand {
@@ -128,13 +161,16 @@ button:disabled {
   gap: 8px;
   padding: 5px 12px;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
 }
 
 .ref-item:hover,
 .file-item:hover,
 .stash-item:hover,
+.search-item:hover,
 .commit-row:hover {
   background: var(--bg-hover);
+  transform: translateX(3px);
 }
 
 .ref-item.current {
@@ -166,6 +202,7 @@ button:disabled {
 
 .graph-empty {
   padding: 32px 16px;
+  animation: fade-up 0.35s ease;
 }
 
 .string-graph-header {
@@ -218,6 +255,11 @@ button:disabled {
   cursor: default;
 }
 
+.string-node.ghost:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .string-node.ghost:disabled {
   opacity: 0.85;
   cursor: default;
@@ -252,11 +294,24 @@ button:disabled {
 
 .subtraction-line.series {
   stroke-width: 2.5;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  opacity: 0.9;
+  animation: series-draw 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: stroke-width 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.subtraction-line.series.related {
+  stroke-width: 3.6;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.45));
 }
 
 .subtraction-line.constant {
   stroke: #6e7681;
   stroke-width: 1.5;
+  opacity: 0.95;
+  animation: constant-in 0.55s ease backwards;
 }
 
 .string-graph {
@@ -284,6 +339,30 @@ button:disabled {
   padding: 10px 12px 10px 18px;
   box-shadow: 0 8px 24px rgba(1, 4, 9, 0.35);
   overflow: hidden;
+  animation: node-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition:
+    left 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.28s ease,
+    min-height 0.28s ease,
+    border-color 0.18s ease,
+    box-shadow 0.22s ease,
+    background 0.18s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.string-node.no-enter {
+  animation: none;
+}
+
+.string-node:hover:not(:disabled):not(.ghost) {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(1, 4, 9, 0.48);
+}
+
+.string-node:active:not(:disabled):not(.ghost) {
+  transform: translateY(-1px) scale(0.99);
 }
 
 .string-node:hover {
@@ -292,7 +371,10 @@ button:disabled {
 
 .string-node.selected {
   background: #1c2128;
-  box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(1, 4, 9, 0.45);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 8px 24px rgba(1, 4, 9, 0.45),
+    0 0 24px rgba(88, 166, 255, 0.18);
 }
 
 .string-node.is-head {
@@ -389,6 +471,7 @@ button:disabled {
 .badge.head {
   background: #1b4332;
   color: var(--green);
+  animation: badge-pulse 2.2s ease-in-out infinite;
 }
 
 .tabs {
@@ -396,6 +479,10 @@ button:disabled {
   gap: 2px;
   padding: 8px;
   border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  position: relative;
 }
 
 .tabs button.active {
@@ -407,6 +494,10 @@ button:disabled {
   padding: 10px 12px;
   overflow: auto;
   flex: 1;
+}
+
+.panel-body-enter {
+  animation: fade-up 0.22s ease;
 }
 
 .diff {
@@ -452,6 +543,7 @@ button:disabled {
   border-radius: 8px;
   max-width: 420px;
   z-index: 20;
+  animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dialog-backdrop {
@@ -462,6 +554,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   z-index: 30;
+  animation: fade-in 0.2s ease;
 }
 
 .dialog {
@@ -472,6 +565,7 @@ button:disabled {
   width: 420px;
   display: grid;
   gap: 10px;
+  animation: dialog-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dialog input,
@@ -509,6 +603,13 @@ button:disabled {
   gap: 8px;
   padding: 3px 0;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.tree-row:hover {
+  background: var(--bg-hover);
+  transform: translateX(3px);
 }
 
 .blame-line {
@@ -526,4 +627,104 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 8px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.search:focus,
+.path:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+}
+
+@keyframes node-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes series-draw {
+  from {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+}
+
+@keyframes constant-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes badge-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(63, 185, 80, 0);
+  }
+}
+
+@keyframes busy-scan {
+  0% {
+    background-position: -45% 0;
+  }
+  100% {
+    background-position: 145% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .string-node,
+  .subtraction-line.series,
+  .subtraction-line.constant,
+  .panel-body-enter,
+  .dialog,
+  .dialog-backdrop,
+  .toast,
+  .graph-empty {
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
 }

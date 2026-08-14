@@ -239,7 +239,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app${busy ? " is-busy" : ""}`}>
       <header className="toolbar">
         <div className="brand">Git可视化工具</div>
         <input
@@ -474,7 +474,7 @@ export function App() {
               </button>
             ))}
           </div>
-          <div className="panel-body">
+          <div className="panel-body panel-body-enter" key={tab}>
             {tab === "changes" ? (
               <>
                 <div className="commit-box">

@@ -6,6 +6,8 @@ import {
   layoutStringGraph,
   mergeConstantSegments,
   seriesPath,
+  staggerDelay,
+  staggerDelayMs,
   stringNodeHeight,
 } from "../client/stringGraph";
 
@@ -122,5 +124,12 @@ describe("string graph comments", () => {
     expect(lane1[0]?.y1).toBe(0);
     expect(lane1[0]?.y2).toBe(80);
     expect(merged.some((line) => line.lane === 2)).toBe(true);
+  });
+
+  it("caps enter-animation stagger so large graphs do not wait too long", () => {
+    expect(staggerDelayMs(0)).toBe(0);
+    expect(staggerDelayMs(2, 28, 26)).toBe(56);
+    expect(staggerDelayMs(100, 28, 26)).toBe(26 * 28);
+    expect(staggerDelay(3, 10, 26)).toBe("30ms");
   });
 });

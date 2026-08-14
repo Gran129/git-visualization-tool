@@ -1,5 +1,5 @@
 import type { GraphCommit, GraphCommitRole } from "../../shared/types";
-import { layoutStringGraph, seriesPath } from "../stringGraph";
+import { layoutStringGraph, seriesPath, staggerDelay, staggerDelayMs } from "../stringGraph";
 
 const LANE_COLORS = [
   "#58a6ff",
@@ -79,7 +79,7 @@ export function GraphView({ commits, head, selected, detached, onSelect }: Graph
             height={layout.height}
             aria-hidden="true"
           >
-            {layout.constantLines.map((line) => (
+            {layout.constantLines.map((line, index) => (
               <line
                 key={`constant-${line.lane}-${line.y1}-${line.y2}`}
                 className="subtraction-line constant"
@@ -87,28 +87,37 @@ export function GraphView({ commits, head, selected, detached, onSelect }: Graph
                 y1={line.y1}
                 x2={line.x}
                 y2={line.y2}
+                style={{ animationDelay: staggerDelay(index, 40, 16) }}
               />
             ))}
-            {layout.seriesLines.map((line) => (
-              <path
-                key={`series-${line.fromHash}-${line.toHash}`}
-                className="subtraction-line series"
-                d={seriesPath(line)}
-                fill="none"
-                stroke={laneColor(line.lane)}
-              />
-            ))}
+            {layout.seriesLines.map((line, index) => {
+              const related = Boolean(
+                selected && (line.fromHash === selected || line.toHash === selected),
+              );
+              return (
+                <path
+                  key={`series-${line.fromHash}-${line.toHash}`}
+                  className={`subtraction-line series${related ? " related" : ""}`}
+                  d={seriesPath(line)}
+                  fill="none"
+                  stroke={laneColor(line.lane)}
+                  pathLength={1}
+                  style={{ animationDelay: `${staggerDelayMs(index) + 80}ms` }}
+                />
+              );
+            })}
           </svg>
-          {layout.nodes.map((node) => {
+          {layout.nodes.map((node, index) => {
             const isSelected = selected === node.hash;
             const isHead = head === node.hash;
             const color = laneColor(node.lane);
             const roleLabel = node.ghost ? null : (ROLE_LABEL[node.role] ?? null);
+            const skipEnter = index >= 28;
             return (
               <button
                 key={node.hash}
                 type="button"
-                className={`string-node${isSelected ? " selected" : ""}${isHead ? " is-head" : ""}${node.ghost ? " ghost" : ""}`}
+                className={`string-node${isSelected ? " selected" : ""}${isHead ? " is-head" : ""}${node.ghost ? " ghost" : ""}${skipEnter ? " no-enter" : ""}`}
                 style={{
                   left: node.x,
                   top: node.y,
@@ -116,6 +125,7 @@ export function GraphView({ commits, head, selected, detached, onSelect }: Graph
                   minHeight: node.height,
                   height: node.height,
                   borderColor: isSelected || isHead ? color : undefined,
+                  animationDelay: skipEnter ? undefined : staggerDelay(index),
                 }}
                 title={node.comment}
                 disabled={node.ghost}
