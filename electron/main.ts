@@ -69,7 +69,7 @@ function setupMenu(win: BrowserWindow): void {
 
 async function pickDirectory(win: BrowserWindow): Promise<string | null> {
   const result = await dialog.showOpenDialog(win, {
-    title: "选择 Git 仓库目录",
+    title: "选择目录",
     properties: ["openDirectory", "createDirectory"],
   });
   const selected = result.filePaths[0];

@@ -52,6 +52,8 @@ export async function dispatch(method: string, payload: InvokePayload = {}): Pro
       return ensureUserGitOnPath({ force: bool(payload, "force") });
     case "defaultPath":
       return { path: ops.defaultRepoPath(), home: ops.homedir() };
+    case "isRepo":
+      return ops.inspectRepoPath(str(payload, "path"));
     case "open":
       return ops.getRepoSummary(ops.requireRepo(str(payload, "path")));
     case "repo":

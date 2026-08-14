@@ -44,6 +44,26 @@ describe("desktop dispatch", () => {
     expect(graph.commits[0]?.subject).toBe("hello");
   });
 
+  it("reports whether a path is a git repository without opening it", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "git-viz-isrepo-"));
+    created.push(dir);
+    const missing = path.join(dir, "no-such-dir");
+
+    const empty = (await dispatch("isRepo", { path: dir })) as { path: string; isRepo: boolean };
+    expect(empty.isRepo).toBe(false);
+    expect(empty.path).toBe(path.resolve(dir));
+
+    git(dir, ["init"]);
+    const ready = (await dispatch("isRepo", { path: dir })) as { path: string; isRepo: boolean };
+    expect(ready.isRepo).toBe(true);
+
+    const blank = (await dispatch("isRepo", { path: "" })) as { path: string; isRepo: boolean };
+    expect(blank).toEqual({ path: "", isRepo: false });
+
+    const absent = (await dispatch("isRepo", { path: missing })) as { isRepo: boolean };
+    expect(absent.isRepo).toBe(false);
+  });
+
   it("rejects unknown methods", async () => {
     await expect(dispatch("not-a-method", {})).rejects.toThrow(/未知方法/);
   });
